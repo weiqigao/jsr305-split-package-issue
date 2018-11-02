@@ -1,0 +1,46 @@
+buildscript {
+    repositories {
+        maven {
+            url 'https://plugins.gradle.org/m2/'
+        }
+    }
+
+    dependencies {
+        classpath 'org.javamodularity:moduleplugin:1.1.1'
+    }
+}
+
+apply plugin: 'java'
+apply plugin: 'application'
+apply plugin: 'org.javamodularity.moduleplugin'
+
+mainClassName = "$moduleName/com.weiqigao.bar.Main"
+
+repositories {
+    mavenLocal()
+}
+
+dependencies {
+    implementation 'com.weiqigao:foo:1.0.0'
+}
+
+compileJava {
+    doFirst {
+        def jsr305 = classpath.filter{it.name.contains('jsr305')}.asPath
+        classpath = classpath.filter{!it.name.contains('jsr305')}
+        options.compilerArgs += [
+                '--patch-module', "java.annotation=$jsr305"
+        ]
+    }
+}
+
+
+run {
+    doFirst {
+        def jsr305 = classpath.filter{it.name.contains('jsr305')}.asPath
+        classpath = classpath.filter{!it.name.contains('jsr305')}
+        jvmArgs += [
+                '--patch-module', "java.annotation=$jsr305"
+        ]
+    }
+}
