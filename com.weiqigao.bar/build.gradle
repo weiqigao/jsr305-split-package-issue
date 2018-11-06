@@ -14,6 +14,8 @@ apply plugin: 'java'
 apply plugin: 'application'
 apply plugin: 'org.javamodularity.moduleplugin'
 
+import java.util.regex.Matcher
+
 mainClassName = "$moduleName/com.weiqigao.bar.Main"
 
 repositories {
@@ -42,5 +44,34 @@ run {
         jvmArgs += [
                 '--patch-module', "java.annotation=$jsr305"
         ]
+    }
+}
+
+startScripts {
+    doFirst {
+        classpath = classpath.filter{!it.name.contains('jsr305')}
+        defaultJvmOpts = [
+                '--patch-module', "java.annotation=APP_HOME_PATCH/jsr305-3.0.2.jar"
+        ]
+    }
+
+    doLast {
+        def bashFile = new File(outputDir, applicationName)
+        String bashContent = bashFile.text
+        bashFile.text = bashContent.replaceFirst('APP_HOME_PATCH/', Matcher.quoteReplacement('$APP_HOME_/patch/'))
+
+        def batFile = new File(outputDir, applicationName + ".bat")
+        String batContent = batFile.text
+        batFile.text = batContent.replaceFirst('APP_HOME_PATCH/', Matcher.quoteReplacement('%APP_HOME%\\patch\\'))
+    }
+}
+
+distributions {
+    main {
+        contents {
+            filesMatching ("*jsr305*") {
+                setPath getPath().replaceFirst('lib', 'patch')
+            }
+        }
     }
 }
