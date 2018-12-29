@@ -6,7 +6,7 @@ buildscript {
     }
 
     dependencies {
-        classpath 'org.javamodularity:moduleplugin:1.1.1'
+        classpath 'org.javamodularity:moduleplugin:1.4.0'
     }
 }
 
@@ -18,60 +18,25 @@ import java.util.regex.Matcher
 
 mainClassName = "$moduleName/com.weiqigao.bar.Main"
 
+patchModules.config = [
+    "java.annotation=jsr305-3.0.2.jar"
+]
+
 repositories {
     mavenLocal()
+    mavenCentral()
 }
 
 dependencies {
     implementation 'com.weiqigao:foo:1.0.0'
+    testImplementation 'org.junit.jupiter:junit-jupiter-api:5.3.1'
+    testImplementation 'org.junit.jupiter:junit-jupiter-params:5.3.1'
+    testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.3.1'
 }
 
-compileJava {
-    doFirst {
-        def jsr305 = classpath.filter{it.name.contains('jsr305')}.asPath
-        classpath = classpath.filter{!it.name.contains('jsr305')}
-        options.compilerArgs += [
-                '--patch-module', "java.annotation=$jsr305"
-        ]
-    }
-}
-
-
-run {
-    doFirst {
-        def jsr305 = classpath.filter{it.name.contains('jsr305')}.asPath
-        classpath = classpath.filter{!it.name.contains('jsr305')}
-        jvmArgs += [
-                '--patch-module', "java.annotation=$jsr305"
-        ]
-    }
-}
-
-startScripts {
-    doFirst {
-        classpath = classpath.filter{!it.name.contains('jsr305')}
-        defaultJvmOpts = [
-                '--patch-module', "java.annotation=APP_HOME_PATCH/jsr305-3.0.2.jar"
-        ]
-    }
-
-    doLast {
-        def bashFile = new File(outputDir, applicationName)
-        String bashContent = bashFile.text
-        bashFile.text = bashContent.replaceFirst('APP_HOME_PATCH/', Matcher.quoteReplacement('$APP_HOME_/patch/'))
-
-        def batFile = new File(outputDir, applicationName + ".bat")
-        String batContent = batFile.text
-        batFile.text = batContent.replaceFirst('APP_HOME_PATCH/', Matcher.quoteReplacement('%APP_HOME%\\patch\\'))
-    }
-}
-
-distributions {
-    main {
-        contents {
-            filesMatching ("*jsr305*") {
-                setPath getPath().replaceFirst('lib', 'patch')
-            }
-        }
+test {
+    useJUnitPlatform()
+    testLogging {
+        events 'PASSED', 'FAILED', 'SKIPPED'
     }
 }
